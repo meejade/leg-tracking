@@ -147,6 +147,8 @@ def main():
     # 打开摄像头
     caps = [cv2.VideoCapture(src) for src in CAM_SOURCES]
     for i, cap in enumerate(caps):
+        if cap.isOpened():
+            print(f"Open camera {i} src={CAM_SOURCES[i]}")
         if not cap.isOpened():
             print(f"Failed to open camera {i} src={CAM_SOURCES[i]}")
             return
@@ -203,7 +205,8 @@ def main():
                 else:
                     # 可见视角不足，使用 None 或者上帧预测（移动平均无法预测）
                     results_3d[color] = None
-
+            for color in results_3d:
+                print(f"{color}: {results_3d[color]}")
             # 发送到 Unity
             packet = {
                 "timestamp": time.time(),
@@ -212,15 +215,19 @@ def main():
             sock.sendto(json.dumps(packet).encode('utf-8'), (UDP_IP, UDP_PORT))
 
             # 可视化（调试用）：在第一台相机画出检测结果和投影（若需要）
-            vis = frames[0].copy()
-            det0 = detections[0]
-            for color, uv in det0.items():
-                if uv is not None:
-                    cv2.circle(vis, (int(uv[0]), int(uv[1])), 6, (0,255,0), -1)
-                    cv2.putText(vis, color, (int(uv[0])+8,int(uv[1])+8), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255),1)
-            cv2.imshow("cam0", vis)
+            for i, (frame, det) in enumerate(zip(frames, detections)):
+                vis = frame.copy()
+                for color, uv in det.items():
+                    if uv is not None:
+                        cv2.circle(vis, (int(uv[0]), int(uv[1])), 6, (0, 255, 0), -1)
+                        cv2.putText(vis, color, (int(uv[0]) + 8, int(uv[1]) + 8),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+                cv2.imshow(f"cam{i}", vis)
+
+            # 只需要一个 waitKey，就能刷新所有窗口
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
+
 
     finally:
         for cap in caps:
