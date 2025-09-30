@@ -37,12 +37,18 @@ camera_params = [
 # 颜色阈值设置（HSV），需要在你的实验光照下调参
 # 示例：6 种颜色 (h_low,h_high), (s_low,s_high), (v_low,v_high)
 color_ranges = {
-    "red":    [(0,10,100,255,100,255), (160,180,100,255,100,255)],  # 红色可能要双区间
-    "green":  [(40,80,50,255,50,255)],
-    "blue":   [(100,140,50,255,50,255)],
-    "yellow": [(20,35,100,255,100,255)],
-    "magenta":[(140,160,100,255,100,255)],
-    "cyan":   [(85,95,50,255,50,255)]
+    "blue":    [(90,120,100,255,100,255)],  # 红色可能要双区间
+    "green":  [(35,85,100,255,100,255)],
+    "orange":  [(0,20,100,255,100,255)],
+    "yellow": [(20,30,55,255,55,255)],
+    "pink":[(160,179,100,255,100,255)],
+    "violet":   [(110,130,55,255,100,255)],
+    # "1":  [(0,30,0,255,0,255)],
+    # "2":  [(30,60,0,255,0,255)],
+    # "3":  [(60,90,0,255,0,255)],
+    # "4":  [(90,120,0,255,0,255)],
+    # "5":  [(120,150,0,255,0,255)],
+    # "6":  [(150,180,0,255,0,255)],
 }
 
 # UDP 配置（将 3D 点发给 Unity）
@@ -139,12 +145,21 @@ class MovingAverage:
         self.buff.append(pt)
         arr = np.array(self.buff)
         return arr.mean(axis=0)
+hsv_frame = None
+def pick_color(event, x, y, flags, param):
+    global hsv_frame
+    if event == cv2.EVENT_LBUTTONDOWN:
+        hsv_value = hsv_frame[y,x]
+        print(f"Clicked: {hsv_value}")
 
 # ----------------------------
 # 主循环：多相机检测 + 三角化 + 平滑 + UDP 发送
 # ----------------------------
 def main():
     # 打开摄像头
+    global hsv_frame
+    cv2.namedWindow("cam0")
+    cv2.setMouseCallback("cam0", pick_color)
     caps = [cv2.VideoCapture(src) for src in CAM_SOURCES]
     for i, cap in enumerate(caps):
         if cap.isOpened():
@@ -205,8 +220,8 @@ def main():
                 else:
                     # 可见视角不足，使用 None 或者上帧预测（移动平均无法预测）
                     results_3d[color] = None
-            for color in results_3d:
-                print(f"{color}: {results_3d[color]}")
+            # for color in results_3d:
+            #     print(f"{color}: {results_3d[color]}")
             # 发送到 Unity
             packet = {
                 "timestamp": time.time(),
@@ -223,6 +238,10 @@ def main():
                         cv2.putText(vis, color, (int(uv[0]) + 8, int(uv[1]) + 8),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
                 cv2.imshow(f"cam{i}", vis)
+                hsv_frame = cv2.cvtColor(vis, cv2.COLOR_BGR2HSV)
+                #cv2.imshow(f"color{i}", hsv_frame)
+                # frame = cv2.cvtColor(vis, cv2.COLOR_HSV2BGR)
+                # cv2.imshow(f"BGR{i}", frame)
 
             # 只需要一个 waitKey，就能刷新所有窗口
             if cv2.waitKey(1) & 0xFF == ord('q'):
