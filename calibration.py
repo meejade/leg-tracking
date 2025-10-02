@@ -34,7 +34,7 @@ for fname in images:
 print(objpoints)
 print(imgpoints)
 print(gray.shape)
-ret, K, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+ret, K, dist, rvecs, tvecs =    (objpoints, imgpoints, gray.shape[::-1], None, None)
 print(gray.shape[::-1])
 print("K=", K)
 print("dist=", dist)

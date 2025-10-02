@@ -16,21 +16,26 @@ CAM_SOURCES = [0, 1]  # 示例：两台本地 webcam；可替换为 RTSP/USB id
 camera_params = [
     # 示例占位（务必用实际标定结果替换）
     {
-        "K": np.array([[1000., 0., 640.],
-                       [0., 1000., 360.],
-                       [0., 0., 1.]]),
-        "dist": np.zeros(5),
-        "R": np.eye(3),
-        "t": np.zeros((3,1))
-    },
-    {
-        "K": np.array([[1000., 0., 640.],
-                       [0., 1000., 360.],
+
+        "K": np.array([[1160.5, 0., 934.6532],
+                       [0., 1169.6, 574.8938],
                        [0., 0., 1.]]),
         "dist": np.zeros(5),
         # 示例外参：第二台相机绕y轴平移 200mm
-        "R": np.eye(3),
-        "t": np.array([[ -0.20], [0.0], [0.0]])  # 单位：米（或与K相同尺度）
+        "R": np.array([[0.9984, 0.0504, -0.0258],
+                       [-0.0358, 0.9145, 0.4029],
+                       [0.0439, -0.4014, 0.9149]]),
+        "t": np.array([80.146, 430.1, 839.5])  # 单位：米（或与K相同尺度）
+    },
+    {
+        "K": np.array([[1012.9, 0., 926.4134],
+                       [0., 1030.4, 614.3430],
+                       [0., 0., 1.]]),
+        "dist": np.zeros(5),
+        "R": np.array([[0.9995, 0.0074, 0.0304],
+                       [-0.0152, 0.9643, 0.2643],
+                       [-0.0274, -0.2646, 0.9640]]),
+        "t": np.array([9.5, -304.788, 937.249])
     }
 ]
 
@@ -152,6 +157,14 @@ def pick_color(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         hsv_value = hsv_frame[y,x]
         print(f"Clicked: {hsv_value}")
+current_frame = None
+def pick_points(event, x, y, flags, param):
+    global current_frame
+    if event == cv2.EVENT_LBUTTONDOWN:
+        p = camera_params[0]
+        proj_matrix = [make_projection_matrix(p["K"], p["R"], p["t"])]
+        result = triangulate_multiview([(x,y)], proj_matrix)  # 3D (x,y,z)
+        print(f"2D: {x,y}, 3D: {result}")
 
 # ----------------------------
 # 主循环：多相机检测 + 三角化 + 平滑 + UDP 发送
@@ -159,11 +172,15 @@ def pick_color(event, x, y, flags, param):
 def main():
     # 打开摄像头
     global hsv_frame
+    global current_frame
     cv2.namedWindow("cam1")
-    cv2.setMouseCallback("cam1", pick_color)
+
+    cv2.setMouseCallback("cam1", pick_points)
     caps = [cv2.VideoCapture(src) for src in CAM_SOURCES]
     for i, cap in enumerate(caps):
         if cap.isOpened():
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
             print(f"Open camera {i} src={CAM_SOURCES[i]}")
         if not cap.isOpened():
             print(f"Failed to open camera {i} src={CAM_SOURCES[i]}")
@@ -221,8 +238,8 @@ def main():
                 else:
                     # 可见视角不足，使用 None 或者上帧预测（移动平均无法预测）
                     results_3d[color] = None
-            # for color in results_3d:
-            #     print(f"{color}: {results_3d[color]}")
+            for color in results_3d:
+                print(f"{color}: {results_3d[color]}")
             # 发送到 Unity
             packet = {
                 "timestamp": time.time(),
@@ -239,7 +256,8 @@ def main():
                         cv2.putText(vis, color, (int(uv[0]) + 8, int(uv[1]) + 8),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
                 cv2.imshow(f"cam{i}", vis)
-                hsv_frame = cv2.cvtColor(vis, cv2.COLOR_BGR2HSV)
+                current_frame = vis
+                #hsv_frame = cv2.cvtColor(vis, cv2.COLOR_BGR2HSV)
                 #cv2.imshow(f"color{i}", hsv_frame)
                 # frame = cv2.cvtColor(vis, cv2.COLOR_HSV2BGR)
                 # cv2.imshow(f"BGR{i}", frame)
