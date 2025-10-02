@@ -15,7 +15,7 @@ objp *= square_size
 objpoints = []  # 3D 点
 imgpoints = []  # 2D 点
 
-images = glob.glob('D:/Meiqi/leg-tracking-master/leg-tracking-master/*.jpg')  # 存放棋盘格图片路径
+images = glob.glob('camera1\*.jpg')  # 存放棋盘格图片路径
 
 for fname in images:
     print("for")
@@ -34,7 +34,12 @@ for fname in images:
 print(objpoints)
 print(imgpoints)
 print(gray.shape)
-ret, K, dist, rvecs, tvecs =    (objpoints, imgpoints, gray.shape[::-1], None, None)
+
+flags = (cv2.CALIB_FIX_PRINCIPAL_POINT |   # 固定主点在中心
+         cv2.CALIB_ZERO_TANGENT_DIST   |   # 不拟合切向畸变
+         cv2.CALIB_FIX_K3)
+
+ret, K, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None, flags=flags)
 print(gray.shape[::-1])
 print("K=", K)
 print("dist=", dist)
