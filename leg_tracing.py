@@ -37,16 +37,17 @@ camera_params = [
 # 颜色阈值设置（HSV），需要在你的实验光照下调参
 # 示例：6 种颜色 (h_low,h_high), (s_low,s_high), (v_low,v_high)
 color_ranges = {
-    "blue":    [(90,120,100,255,100,255)],  # 红色可能要双区间
-    "green":  [(35,85,100,255,100,255)],
+    "blue":    [(90,110,100,255,100,255)],  # 红色可能要双区间
+    "green":  [(35,85,55,255,100,255)],
     "orange":  [(0,20,100,255,100,255)],
     "yellow": [(20,30,55,255,55,255)],
     "pink":[(160,179,100,255,100,255)],
     "violet":   [(110,130,55,255,100,255)],
-    # "1":  [(0,30,0,255,0,255)],
-    # "2":  [(30,60,0,255,0,255)],
-    # "3":  [(60,90,0,255,0,255)],
-    # "4":  [(90,120,0,255,0,255)],
+     # "1":  [(90,110,100,255,0,50)],
+     # "2":  [(90,110,100,255,50,100)],
+     # "3":  [(90,110,100,255,150,200)],
+     # "4":  [(90,110,100,255,200,255)],
+
     # "5":  [(120,150,0,255,0,255)],
     # "6":  [(150,180,0,255,0,255)],
 }
@@ -158,8 +159,8 @@ def pick_color(event, x, y, flags, param):
 def main():
     # 打开摄像头
     global hsv_frame
-    cv2.namedWindow("cam0")
-    cv2.setMouseCallback("cam0", pick_color)
+    cv2.namedWindow("cam1")
+    cv2.setMouseCallback("cam1", pick_color)
     caps = [cv2.VideoCapture(src) for src in CAM_SOURCES]
     for i, cap in enumerate(caps):
         if cap.isOpened():
@@ -236,7 +237,7 @@ def main():
                     if uv is not None:
                         cv2.circle(vis, (int(uv[0]), int(uv[1])), 6, (0, 255, 0), -1)
                         cv2.putText(vis, color, (int(uv[0]) + 8, int(uv[1]) + 8),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
                 cv2.imshow(f"cam{i}", vis)
                 hsv_frame = cv2.cvtColor(vis, cv2.COLOR_BGR2HSV)
                 #cv2.imshow(f"color{i}", hsv_frame)
